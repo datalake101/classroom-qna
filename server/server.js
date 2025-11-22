@@ -2,10 +2,19 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 app.use(cors());
-app.get("/", (req, res) => res.send("Server is working!"));
+
+// Serve static files from the web folder
+const webPath = path.join(__dirname, 'web');
+app.use(express.static(webPath));
+
+// Serve index.html on root
+app.get('/', (req, res) => {
+    res.sendFile(path.join(webPath, 'index.html'));
+});
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
@@ -64,5 +73,5 @@ io.on('connection', (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 8080; // Railway sets PORT
 server.listen(PORT, () => console.log(`Server listening on ${PORT}`));
