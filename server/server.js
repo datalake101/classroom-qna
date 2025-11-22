@@ -2,10 +2,18 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const path = require('path');  // <- add this
 
 const app = express();
 app.use(cors());
-app.get("/", (req, res) => res.send("Server is working!"));
+
+// Serve static files from the web folder
+app.use(express.static(path.join(__dirname, '../web')));
+
+// Serve index.html on root
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../web/index.html'));
+});
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
