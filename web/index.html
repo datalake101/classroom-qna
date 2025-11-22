@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Classroom Q&A</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Inter', sans-serif; background:#f5f7fa; color:#222; margin:0; display:flex; justify-content:center; align-items:center; height:100vh; }
+  .container { background:#fff; padding:30px; border-radius:15px; box-shadow:0 10px 25px rgba(0,0,0,0.1); width:400px; max-width:90%; }
+  h1 { text-align:center; font-weight:600; margin-bottom:20px; }
+  input { width:100%; padding:12px 15px; margin:8px 0; border-radius:8px; border:1px solid #ccc; font-size:14px; }
+  button { width:100%; padding:12px; border:none; border-radius:8px; background:#4f46e5; color:#fff; font-weight:600; cursor:pointer; font-size:15px; margin-top:10px; }
+  button:hover { background:#4338ca; }
+  #qaSection { display:none; margin-top:20px; }
+  .question { background:#f0f2ff; padding:10px 15px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+  .answered { text-decoration:line-through; color:#999; background:#e5e7eb; }
+  .qbtn { margin-left:10px; background:#e5e7eb; color:#555; border:none; padding:5px 8px; border-radius:5px; cursor:pointer; }
+  .qbtn:hover { background:#d1d5db; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Classroom Q&A</h1>
+  <div id="loginSection">
+    <input type="text" id="name" placeholder="Your Name" />
+    <input type="password" id="password" placeholder="Session Password" />
+    <select id="role">
+      <option value="student">Student</option>
+      <option value="teacher">Teacher</option>
+    </select>
+    <button id="joinBtn">Join Session</button>
+  </div>
+
+  <div id="qaSection">
+    <input type="text" id="questionInput" placeholder="Type your question..." />
+    <button id="askBtn">Submit Question</button>
+    <div id="questions"></div>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.8.0/socket.io.min.js"></script>
+<script>
+  const socket = io('http://localhost:3000'); // adjust port if needed
+  let role = '';
+  document.getElementById('joinBtn').onclick = () => {
+    const name = document.getElementById('name').value;
+    const password = document.getElementById('password').value;
+    role = document.getElementById('role').value;
+    if (!name || !password) return alert('Name and password required');
+    socket.emit('join-session', { name, password, role });
+  }
+
+  socket.on('joined', ({ questions }) => {
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('qaSection').style.display = 'block';
+    updateQuestions(questions);
+  });
+
+  socket.on('join-error', (msg) => alert(msg));
+
+  document.getElementById('askBtn').onclick = () => {
+    const text = document.getElementById('questionInput').value;
+    if (!text) return;
+    socket.emit('submit-question', { name: document.getElementById('name').value, text });
+    document.getElementById('questionInput').value = '';
+  }
+
+  socket.on('new-question', addQuestion);
+  socket.on('update-question', updateQuestion);
+  socket.on('delete-question', deleteQuestion);
+
+  function addQuestion(q) {
+    const div = document.createElement('div');
+    div.className = 'question' + (q.answered ? ' answered' : '');
+    div.id = q.id;
+    div.innerHTML = `<span>${q.name}: ${q.text}</span>`;
+    if (role === 'teacher') {
+      const markBtn = document.createElement('button');
+      markBtn.className = 'qbtn';
+      markBtn.textContent = '✔';
+      markBtn.onclick = () => socket.emit('mark-answered', { qid: q.id });
+      const delBtn = document.createElement('button');
+      delBtn.className = 'qbtn';
+      delBtn.textContent = '🗑';
+      delBtn.onclick = () => socket.emit('delete-question', { qid: q.id });
+      div.appendChild(markBtn);
+      div.appendChild(delBtn);
+    }
+    document.getElementById('questions').appendChild(div);
+  }
+
+  function updateQuestions(questions) {
+    const container = document.getElementById('questions');
+    container.innerHTML = '';
+    questions.forEach(addQuestion);
+  }
+
+  function updateQuestion(q) {
+    const div = document.getElementById(q.id);
+    if (div) div.className = 'question answered';
+  }
+
+  function deleteQuestion(qid) {
+    const div = document.getElementById(qid);
+    if (div) div.remove();
+  }
+</script>
+</body>
+</html>
