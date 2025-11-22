@@ -2,17 +2,17 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
-const path = require('path');  // <- add this
+const path = require('path');
 
 const app = express();
 app.use(cors());
 
-// Serve static files from the web folder
-app.use(express.static(path.join(__dirname, '../web')));
+// Serve static files from the web folder inside server/
+app.use(express.static(path.join(__dirname, 'web')));
 
 // Serve index.html on root
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../web/index.html'));
+    res.sendFile(path.join(__dirname, 'web/index.html'));
 });
 
 const server = http.createServer(app);
@@ -72,5 +72,6 @@ io.on('connection', (socket) => {
   });
 });
 
+// Use the port provided by Railway or fallback to 4000
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => console.log(`Server listening on ${PORT}`));
